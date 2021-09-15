@@ -1,7 +1,12 @@
 """Support for monitoring the LinkStation client."""
 from __future__ import annotations
+from . import LinkStationDataCoordinator
 
 from datetime import timedelta
+from homeassistant.helpers.restore_state import RestoreEntity
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant, callback
 import logging
 import sys
 from typing import Any
@@ -15,8 +20,11 @@ from .const import (
     ATTR_DISK_USED,
     DEFAULT_NAME,
     DEFAULT_UPDATE_INTERVAL,
+    DOMAIN,
     LINKSTATION_DISK_STATUS_NORMAL,
     LINKSTATION_STATUS_ATTR_NAME,
+    SENSOR_KEYS,
+    SENSOR_TYPES,
 )
 from homeassistant.components.sensor import (
     PLATFORM_SCHEMA,
@@ -37,30 +45,10 @@ from homeassistant.const import (
 )
 from homeassistant.exceptions import PlatformNotReady
 import homeassistant.helpers.config_validation as cv
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 _LOGGER = logging.getLogger(__name__)
-_THROTTLED_REFRESH = None
 
-SENSOR_TYPES: tuple[SensorEntityDescription, ...] = (
-    SensorEntityDescription(
-        key=LINKSTATION_STATUS_ATTR_NAME,
-        name="status",
-    ),
-    SensorEntityDescription(
-        key="disk_free",
-        name="available",
-        native_unit_of_measurement=DATA_GIGABYTES,
-        state_class=STATE_CLASS_MEASUREMENT,
-    ),
-    SensorEntityDescription(
-        key="disk_used_pct",
-        name="used (%)",
-        native_unit_of_measurement=PERCENTAGE,
-        state_class=STATE_CLASS_MEASUREMENT,
-    ),
-)
-
-SENSOR_KEYS: list[str] = [desc.key for desc in SENSOR_TYPES]
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
@@ -79,135 +67,126 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     }
 )
 
+async def async_setup_entry(
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
+) -> None:
+    """Add LinkStation entities from a config_entry."""
+    name: str = entry.data[CONF_NAME]
 
-async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
-    """Set up the Linkstation sensors."""
-    name = config[CONF_NAME]
-    host = config[CONF_HOST]
-    username = config[CONF_USERNAME]
-    password = config[CONF_PASSWORD]
-    disks = config[CONF_DISKS]
+    coordinator: LinkStationDataCoordinator = hass.data[DOMAIN]
 
-    linkstation_api = LinkStation(username, password, host)
-
-    if not disks:
-        _LOGGER.debug("No disks configuration, getting all disks from server.")
-        try:
-            disks = await linkstation_api.get_all_disks_async()
-        except Exception:
-            _LOGGER.error("Connection to LinkStation failed", exc_info=True)
-            raise PlatformNotReady
-
-    if name == DEFAULT_NAME:
-        _LOGGER.debug("No LinkStation Name configuration, gettine name from server.")
-        try:
-            name = await linkstation_api.get_linkstation_name_async()
-        except Exception:
-            _LOGGER.error("Connection to LinkStation failed", exc_info=True)
-            raise PlatformNotReady
-
-    monitored_variables = config[CONF_MONITORED_VARIABLES]
-    entities = []
-
-    for disk in disks:
-        for description in SENSOR_TYPES:
-            if description.key in monitored_variables:
-                entities.append(
-                    LinkStationSensor(linkstation_api, name, description, disk)
+    sensors: list[LinkStationSensorEntity] = []
+    if coordinator.disks:
+        for disk in coordinator.disks:
+            for description in SENSOR_TYPES:
+                sensors.append(
+                    LinkStationSensorEntity(coordinator, description, name, disk)
                 )
 
-    async_add_entities(entities)
+    async_add_entities(sensors)
 
-
-class LinkStationSensor(SensorEntity):
+class LinkStationSensorEntity(CoordinatorEntity, RestoreEntity, SensorEntity):
     """Representation of a LinkStation sensor."""
+
+    coordinator: LinkStationDataCoordinator
 
     def __init__(
         self,
-        linkstation_client: LinkStation,
-        linkstation_name,
+        coordinator: LinkStationDataCoordinator,
         description: SensorEntityDescription,
+        linkstation_name: str,
         disk_name: str,
     ):
         """Initialize the sensor."""
+        super().__init__(coordinator)
         self.entity_description = description
-        self.client = linkstation_client
-        self.disk_status = None
-        self.disk = disk_name
-        self.disk_data = None
+        self.disk_name = disk_name
+        self.linkstation_name = linkstation_name
+
         self._attr_name = f"{linkstation_name} {disk_name} {description.name}"
         self._attrs: dict[str, Any] = {}
 
-    async def async_update(self):
-        """Get the latest data from LinkStation and updates the state."""
-        _LOGGER.debug("Update data for %s", self._attr_name)
+    async def async_added_to_hass(self) -> None:
+        """Handle entity which will be added."""
+        await super().async_added_to_hass()
+        state = await self.async_get_last_state()
+        if state:
+            self._attr_native_value = state.state
 
-        try:
-            self.disk_data = await self.client.get_disks_info_with_cache_async()
-            self.disk_status = await self.client.get_disk_status_async(self.disk)
-            self._attr_available = True
-            await self.client.close()
-        except Exception:
-            _LOGGER.error("Connection to LinkStation Failed", exc_info=True)
-            return
+        @callback
+        def update() -> None:
+            """Update state."""
+            self._update_state()
+            self.async_write_ha_state()
 
-        sensor_type = self.entity_description.key
-        if sensor_type == LINKSTATION_STATUS_ATTR_NAME:
+        self.async_on_remove(self.coordinator.async_add_listener(update))
+        self._update_state()
 
-            if self.is_disk_ready():
-                self._attr_native_value = LINKSTATION_DISK_STATUS_NORMAL
-            else:
-                self._attr_native_value = self.disk_status
-            self._attr_icon = "mdi:harddisk"
-            return
+    def _update_state(self):
+        """Update sensors state."""
+        if self.coordinator.data:
 
-        if self.is_disk_ready():
-            if sensor_type == "disk_used_pct":
-                self._attr_native_value = self.client.get_disk_pct_used(self.disk)
+            if self.entity_description.key == LINKSTATION_STATUS_ATTR_NAME:
+                if self.is_disk_ready_status(
+                    self.coordinator.data[self.disk_name]["status"]
+                ):
+                    self._attr_native_value = LINKSTATION_DISK_STATUS_NORMAL
+                else:
+                    self._attr_native_value = self.coordinator.data[self.disk_name][
+                        "status"
+                    ]
+                self._attr_icon = "mdi:harddisk"
+            elif (
+                self.entity_description.key == "disk_used_pct"
+                and self.is_disk_ready_status(
+                    self.coordinator.data[self.disk_name]["status"]
+                )
+            ):
+                self._attr_native_value = self.coordinator.data[self.disk_name][
+                    "disk_used_pct"
+                ]
                 self._attr_icon = "mdi:gauge"
-
-            elif sensor_type == "disk_free":
-
-                self._attr_native_value = self.client.get_disk_free(self.disk)
+            elif (
+                self.entity_description.key == "disk_free"
+                and self.is_disk_ready_status(
+                    self.coordinator.data[self.disk_name]["status"]
+                )
+            ):
+                self._attr_native_value = self.coordinator.data[self.disk_name][
+                    "disk_free"
+                ]
                 self._attr_icon = "mdi:folder-outline"
-        else:
-            self._attr_available = False
+            else:
+                self._attr_available = False
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return the state attributes."""
-        if self.is_disk_ready():
-
-            disk_capacity =  self.client.get_disk_capacity(self.disk)
-            if (disk_capacity is not None):
-                self._attrs.update(
+        if (
+            self.coordinator.data
+            and self.coordinator.data[self.disk_name]
+            and self.is_disk_ready_status(
+                self.coordinator.data[self.disk_name]["status"]
+            )
+        ):
+            self._attrs.update(
                 {
-                    ATTR_DISK_CAPACITY: self.client.get_disk_capacity(self.disk),
+                    ATTR_DISK_CAPACITY: self.coordinator.data[self.disk_name][
+                        "disk_capacity"
+                    ],
+                    ATTR_DISK_USED: self.coordinator.data[self.disk_name]["disk_used"],
+                    ATTR_DISK_UNIT_NAME: self.coordinator.data[self.disk_name][
+                        "disk_unit_name"
+                    ],
                 }
             )
 
-            disk_used = self.client.get_disk_amount_used(self.disk)
-            if (disk_used is not None):
-                self._attrs.update(
-                    {
-                        ATTR_DISK_USED: self.client.get_disk_amount_used(self.disk),
-                    }
-                )
-            disk_unit_name = self.client.get_disk_unit_name(self.disk)
-            if (disk_unit_name is not None):
-                self._attrs.update(
-                    {
-                        ATTR_DISK_UNIT_NAME: self.client.get_disk_unit_name(self.disk),
-                    }
-                )
-
         return self._attrs
 
-    def is_disk_ready(self) -> bool:
+    def is_disk_ready_status(self, status: str) -> bool:
         """Check if disk status is normal."""
-        if self.disk_status is not None and (
-            self.disk_status.startswith(LINKSTATION_DISK_STATUS_NORMAL)
-            or self.disk_status == ""
+        if status is not None and (
+            status.startswith(LINKSTATION_DISK_STATUS_NORMAL) or status == ""
         ):
             return True
         else:
