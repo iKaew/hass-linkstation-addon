@@ -7,21 +7,16 @@ LinkStation Addon is a custom integration of Home Assistant to get diks infomati
 The current version tested by LinkStation Pro Duo LS-WXL. 
 
 
-# Installatoon 
+# Installation
 - Clone this repository
 - Copy `custom_components/linkstation` to your Home Assistant configuration folder. 
-
-# Configration 
+- Add Configration to configuration.yaml
 
 ``` yaml
-sensor:
-  - platform: linkstation
+linkstation:
+  - name: LinkStation
     host: 192.168.1.2 # LinkStation IP Address
     username: !secret linkstation_username
     password: !secret linkstation_password
-    monitored_variables:
-      - 'current_status'
-      - 'disk_used_pct'
-      - 'disk_free'
     scan_interval: 1800 # 30 mins
 ```
