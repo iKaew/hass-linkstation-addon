@@ -14,7 +14,7 @@ The current version tested by LinkStation Pro Duo LS-WXL.
 
 ``` yaml
 linkstation:
-  - name: LinkStation
+    name: LinkStation
     host: 192.168.1.2 # LinkStation IP Address
     username: !secret linkstation_username
     password: !secret linkstation_password
