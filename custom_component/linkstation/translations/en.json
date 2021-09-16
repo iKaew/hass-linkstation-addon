@@ -1,0 +1,24 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "LinkStation with this name already configured. Only a single configuration possible."            
+        },
+        "step": {
+            "user": {
+                "description": "Do you want to start set up?"
+            }
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "data": {
+                    "scan_interval": "Update frequency (seconds)",
+                    "host": "LinkStation IP",
+                    "username": "Admin Username",
+                    "password": "Admin Password"
+                }
+            }
+        }
+    }
+}
