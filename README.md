@@ -32,5 +32,5 @@ linkstation:
 ```
 
 # Screenshot
-![ui entities screenshot](.\docs\screenshot-entities-ui.png)
-![configuration sceenshot](.\docs\screenshot-configuration.png)
+![ui entities screenshot](/docs/screenshot-entities-ui.png)
+![configuration sceenshot](/docs/screenshot-configuration.png)
