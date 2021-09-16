@@ -2,7 +2,7 @@
 
 # Overview
 
-LinkStation Addon is a custom integration of Home Assistant to get diks infomation from Buffalo LinkStation NAS. This could display disk space available for each disk attached to Link Station including a USB disk. 
+LinkStation Addon is a custom integration of Home Assistant to get disks infomation from Buffalo LinkStation NAS. This could display disk space available for each disk attached to Link Station including a USB disk. 
 
 The current version tested by LinkStation Pro Duo LS-WXL. 
 
