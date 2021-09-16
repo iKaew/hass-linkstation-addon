@@ -6,6 +6,16 @@ LinkStation Addon is a custom integration of Home Assistant to get diks infomati
 
 The current version tested by LinkStation Pro Duo LS-WXL. 
 
+# Features
+
+## Sensors (for each disk)
+- Disk status (normal, remove)
+- Disk space used (%)
+- Disk space available (GB)
+
+## Services
+- Refresh status
+- Restart LinkStation (coming soon)
 
 # Installation
 - Clone this repository
@@ -20,3 +30,7 @@ linkstation:
     password: !secret linkstation_password
     scan_interval: 1800 # 30 mins
 ```
+
+# Screenshot
+![ui entities screenshot](docs\screenshot-entities-ui.png)
+![configuration sceenshot](docs\screenshot-configuration.png)
