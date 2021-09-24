@@ -28,7 +28,7 @@ linkstation:
     host: 192.168.1.2 # LinkStation IP Address
     username: !secret linkstation_username
     password: !secret linkstation_password
-    scan_interval: 1800 # 30 mins
+    scan_interval: 30 # minutes
 ```
 
 # Screenshot

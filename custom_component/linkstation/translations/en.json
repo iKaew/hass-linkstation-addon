@@ -13,7 +13,7 @@
         "step": {
             "init": {
                 "data": {
-                    "scan_interval": "Update frequency (seconds)",
+                    "scan_interval": "Update frequency (minutes)",
                     "host": "LinkStation IP",
                     "username": "Admin Username",
                     "password": "Admin Password"
