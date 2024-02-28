@@ -1,9 +1,9 @@
 {
   "domain": "linkstation",
   "name": "LinkStation",
-  "documentation": "https://github.com/iKaew/hass-linkstation-addon",
-  "requirements": ["linkstation==0.0.11", "expiringdict==1.2.1"],
   "codeowners": ["@ikaew"],
+  "documentation": "https://github.com/iKaew/hass-linkstation-addon",
   "iot_class": "local_polling",
+  "requirements": ["linkstation==0.0.11", "expiringdict==1.2.1"],
   "version": "1.0.0"
 }
