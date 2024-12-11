@@ -18,6 +18,10 @@ The current version tested by LinkStation Pro Duo LS-WXL.
 - Restart LinkStation (coming soon)
 
 # Installation
+Option 1. 
+- Install via HACS
+  
+Option 2. 
 - Clone this repository
 - Copy `custom_components/linkstation` to your Home Assistant configuration folder. 
 - Add Configration to configuration.yaml
