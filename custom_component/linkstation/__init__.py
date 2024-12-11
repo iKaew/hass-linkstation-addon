@@ -1,30 +1,14 @@
 """Integration for Buffalo LinkStation NAS."""
+
 from __future__ import annotations
+
 from datetime import timedelta
 import logging
 from typing import Any, Dict
 
+import voluptuous as vol
 
-from linkstation import LinkStation
 from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
-from .const import (
-    CONF_MANUAL,
-    DOMAIN,
-    ATTR_DISK_CAPACITY,
-    ATTR_DISK_UNIT_NAME,
-    ATTR_DISK_USED,
-    DEFAULT_NAME,
-    DEFAULT_UPDATE_INTERVAL,
-    LINKSTATION_DISK_STATUS_NORMAL,
-    LINKSTATION_REFRESH_SERVICE,
-    LINKSTATION_STATUS_ATTR_NAME,
-    PLATFORMS,
-    SENSOR_KEYS,
-)
-from homeassistant.core import CoreState, HomeAssistant
-from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.helpers.typing import ConfigType
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.const import (
     CONF_DISKS,
     CONF_HOST,
@@ -33,12 +17,29 @@ from homeassistant.const import (
     CONF_PASSWORD,
     CONF_SCAN_INTERVAL,
     CONF_USERNAME,
-    DATA_GIGABYTES,
     EVENT_HOMEASSISTANT_STARTED,
-    PERCENTAGE,
 )
+from homeassistant.core import CoreState, HomeAssistant
+from homeassistant.exceptions import ConfigEntryNotReady
 import homeassistant.helpers.config_validation as cv
-import voluptuous as vol
+from homeassistant.helpers.typing import ConfigType
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from linkstation import LinkStation
+
+from .const import (
+    ATTR_DISK_CAPACITY,
+    ATTR_DISK_UNIT_NAME,
+    ATTR_DISK_USED,
+    CONF_MANUAL,
+    DEFAULT_NAME,
+    DEFAULT_UPDATE_INTERVAL,
+    DOMAIN,
+    LINKSTATION_DISK_STATUS_NORMAL,
+    LINKSTATION_REFRESH_SERVICE,
+    LINKSTATION_STATUS_ATTR_NAME,
+    PLATFORMS,
+    SENSOR_KEYS,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -197,7 +198,6 @@ class LinkStationDataCoordinator(DataUpdateCoordinator):
             await self.api.close()
 
             for disk in disks:
-
                 diskStatus = self.api.get_disk_status(disk)
 
                 if (

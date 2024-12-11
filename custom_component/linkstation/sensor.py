@@ -1,19 +1,39 @@
 """Support for monitoring the LinkStation client."""
+
 from __future__ import annotations
-from . import LinkStationDataCoordinator
 
 from datetime import timedelta
-from homeassistant.helpers.restore_state import RestoreEntity
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
 import logging
 import sys
 from typing import Any
 
-from linkstation import LinkStation
 import voluptuous as vol
 
+from homeassistant.components.sensor import (
+    PLATFORM_SCHEMA,
+    SensorEntity,
+    SensorEntityDescription,
+)
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import (
+    CONF_DISKS,
+    CONF_HOST,
+    CONF_MONITORED_VARIABLES,
+    CONF_NAME,
+    CONF_PASSWORD,
+    CONF_SCAN_INTERVAL,
+    CONF_USERNAME,
+    PERCENTAGE,
+)
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import PlatformNotReady
+import homeassistant.helpers.config_validation as cv
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.restore_state import RestoreEntity
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from linkstation import LinkStation
+
+from . import LinkStationDataCoordinator
 from .const import (
     ATTR_DISK_CAPACITY,
     ATTR_DISK_UNIT_NAME,
@@ -26,26 +46,6 @@ from .const import (
     SENSOR_KEYS,
     SENSOR_TYPES,
 )
-from homeassistant.components.sensor import (
-    PLATFORM_SCHEMA,
-    STATE_CLASS_MEASUREMENT,
-    SensorEntity,
-    SensorEntityDescription,
-)
-from homeassistant.const import (
-    CONF_DISKS,
-    CONF_HOST,
-    CONF_MONITORED_VARIABLES,
-    CONF_NAME,
-    CONF_PASSWORD,
-    CONF_SCAN_INTERVAL,
-    CONF_USERNAME,
-    DATA_GIGABYTES,
-    PERCENTAGE,
-)
-from homeassistant.exceptions import PlatformNotReady
-import homeassistant.helpers.config_validation as cv
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -67,6 +67,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     }
 )
 
+
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
@@ -84,6 +85,7 @@ async def async_setup_entry(
                 )
 
     async_add_entities(sensors)
+
 
 class LinkStationSensorEntity(CoordinatorEntity, RestoreEntity, SensorEntity):
     """Representation of a LinkStation sensor."""
@@ -125,7 +127,6 @@ class LinkStationSensorEntity(CoordinatorEntity, RestoreEntity, SensorEntity):
     def _update_state(self):
         """Update sensors state."""
         if self.coordinator.data:
-
             if self.entity_description.key == LINKSTATION_STATUS_ATTR_NAME:
                 if self.is_disk_ready_status(
                     self.coordinator.data[self.disk_name]["status"]
@@ -189,5 +190,4 @@ class LinkStationSensorEntity(CoordinatorEntity, RestoreEntity, SensorEntity):
             status.startswith(LINKSTATION_DISK_STATUS_NORMAL) or status == ""
         ):
             return True
-        else:
-            return False
+        return False

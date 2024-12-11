@@ -1,11 +1,10 @@
 """The linkstation component constants."""
 
-from homeassistant.const import DATA_GIGABYTES, PERCENTAGE
-from homeassistant.components.sensor import (
-    STATE_CLASS_MEASUREMENT,
-    SensorEntityDescription,
-)
 from typing import Final
+
+from homeassistant.components.sensor import SensorEntityDescription
+from homeassistant.components.sensor.const import SensorStateClass
+from homeassistant.const import PERCENTAGE, UnitOfInformation
 
 DOMAIN: Final = "linkstation"
 PLATFORMS: Final = ["sensor"]
@@ -38,14 +37,14 @@ SENSOR_TYPES: tuple[SensorEntityDescription, ...] = (
     SensorEntityDescription(
         key="disk_free",
         name="available",
-        native_unit_of_measurement=DATA_GIGABYTES,
-        state_class=STATE_CLASS_MEASUREMENT,
+        native_unit_of_measurement=UnitOfInformation.GIGABYTES,
+        state_class=SensorStateClass.MEASUREMENT,
     ),
     SensorEntityDescription(
         key="disk_used_pct",
         name="used (%)",
         native_unit_of_measurement=PERCENTAGE,
-        state_class=STATE_CLASS_MEASUREMENT,
+        state_class=SensorStateClass.MEASUREMENT,
     ),
 )
 

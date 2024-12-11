@@ -1,7 +1,7 @@
 """Config flow for LinkStation Client."""
 
 import voluptuous as vol
-from linkstation import LinkStation
+
 from homeassistant import config_entries
 from homeassistant.const import (
     CONF_DISKS,
@@ -13,13 +13,9 @@ from homeassistant.const import (
     CONF_USERNAME,
 )
 from homeassistant.core import callback
+from linkstation import LinkStation
 
-from .const import (
-    DEFAULT_NAME,
-    DEFAULT_UPDATE_INTERVAL,
-    DOMAIN,
-)
-
+from .const import DEFAULT_NAME, DEFAULT_UPDATE_INTERVAL, DOMAIN
 
 DATA_SCHEMA = vol.Schema(
     {
@@ -27,8 +23,6 @@ DATA_SCHEMA = vol.Schema(
         vol.Required(CONF_HOST): str,
         vol.Required(CONF_USERNAME): str,
         vol.Required(CONF_PASSWORD): str,
-        vol.Optional(CONF_DISKS): [],
-        vol.Optional(CONF_MONITORED_VARIABLES): [],
     }
 )
 
