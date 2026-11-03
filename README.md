@@ -1,3 +1,10 @@
+> [!IMPORTANT]
+> **This project has been archived and is no longer maintained.**
+>
+> You may want to try [placix/home-assistant-buffalo-linkstation](https://github.com/placix/home-assistant-buffalo-linkstation) instead.
+>
+> This repository remains available for reference and historical purposes.
+> 
 # hass-linkstation-addon
 
 # Overview
